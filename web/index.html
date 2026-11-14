@@ -6,17 +6,19 @@
 <title>0Hive — your Gemini login never dies again</title>
 <meta name="description" content="A self-healing, multi-account OpenAI-compatible gateway for Gemini's web app. Open source, built on gemini-web2api.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22 fill=%22%23ffb347%22/></svg>">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#07080c; --bg-2:#0c0e14; --panel:#0f1118;
     --ink:#f2f4f7; --ink-dim:#9aa3b2; --ink-faint:#5c6472;
     --amber:#ffb454; --amber-dim:#8a6a3a; --cyan:#5fd4ff;
     --line:rgba(255,255,255,.08); --radius:14px;
-    --font-display:'Space Grotesk',system-ui,sans-serif;
-    --font-body:'Inter',system-ui,sans-serif;
+    --font-display:'Clash Display',system-ui,sans-serif;
+    --font-body:'General Sans',system-ui,sans-serif;
     --font-mono:'JetBrains Mono',ui-monospace,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -339,7 +341,9 @@ curl http://localhost:8081/v1/chat/completions \
       <div class="brand" style="font-size:1rem;margin-bottom:8px">🐝 0Hive</div>
       <p>Built on <a href="https://github.com/Sophomoresty/gemini-web2api">gemini-web2api</a> by Sophomoresty. MIT licensed.</p>
     </div>
-    <div style="display:flex;gap:28px">
+    <div style="display:flex;gap:28px;flex-wrap:wrap">
+      <a href="dashboard.html">Live dashboard</a>
+      <a href="chat.html">Chat tester</a>
       <a href="https://github.com/oggynjack/0hive">GitHub</a>
       <a href="https://github.com/oggynjack/0hive/blob/master/docs/ACCOUNT_SYNC.md">Docs</a>
       <a href="https://github.com/oggynjack/0hive/blob/master/LICENSE">License</a>

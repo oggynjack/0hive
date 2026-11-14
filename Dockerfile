@@ -4,7 +4,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY gemini_web2api.py account_manager.py db.py metrics.py dashboard.py ./
-COPY dashboard/ ./dashboard/
+COPY web/ ./web/
 COPY config.example.json ./config.json
 EXPOSE 8081
 

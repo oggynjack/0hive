@@ -4,7 +4,7 @@
 toolkit that keeps every account's login fresh automatically, and a live dashboard + chat
 tester to run and watch it all.
 
-**[→ Landing page](https://oggynjack.github.io/0hive/)**
+**[→ Live site](https://hive.0code.site/)**
 
 Built on top of [gemini-web2api](https://github.com/Sophomoresty/gemini-web2api) by
 **Sophomoresty** (MIT licensed) — credit where it's due. 0Hive adds:
@@ -24,6 +24,8 @@ Built on top of [gemini-web2api](https://github.com/Sophomoresty/gemini-web2api)
   management, at `/dashboard.html`. Fully responsive (phone / tablet / desktop).
 - **A built-in chat tester** at `/chat.html` — pick a model from the *live* list the server
   reports (never a hardcoded, possibly-outdated model name), send messages, drag in images.
+- **A proper landing page** at `/` (`web/index.html`) with its own look and motion, separate from
+  the functional dashboard/chat tools.
 
 > ⚠️ **This is an unofficial integration.** It works by reusing a real Gemini web session, which
 > Google does not officially support for this purpose. Behavior, model names, and availability
@@ -45,14 +47,14 @@ python gemini_web2api.py
 The API is now listening on `http://localhost:8081/v1` — OpenAI-compatible
 (`/v1/chat/completions`, `/v1/models`).
 
-### The dashboard + chat tester
+### The website: landing page + dashboard + chat tester
 
 ```bash
-python dashboard/serve_dashboard.py   # http://localhost:8083
+python web/serve_dashboard.py   # http://localhost:8083
 ```
 
-Open `http://localhost:8083/dashboard.html` for live stats and account management, or
-`http://localhost:8083/chat.html` to try it directly.
+Open `http://localhost:8083/` for the landing page, `/dashboard.html` for live stats and account
+management, or `/chat.html` to try it directly.
 
 ### Keeping accounts logged in automatically
 
@@ -64,6 +66,27 @@ See **[docs/ACCOUNT_SYNC.md](docs/ACCOUNT_SYNC.md)** for the full setup of eithe
 ```bash
 docker compose up -d --build
 ```
+
+### Deploying the website for free (Cloudflare Workers/Pages)
+
+`web/` is a fully static site (no build step) — deploy it anywhere, unlimited bandwidth, for free:
+
+```bash
+cd web
+npx wrangler deploy          # first run creates the project; prints a *.workers.dev URL
+```
+
+Then point your own domain at it (Cloudflare dashboard → Workers & Pages → your project →
+Custom Domains), or via the API:
+
+```bash
+curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/workers/domains" \
+  -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
+  -d '{"zone_id":"<your zone id>","hostname":"<your-subdomain>","service":"0hive","environment":"production"}'
+```
+
+The live instance at [hive.0code.site](https://hive.0code.site/) runs exactly this way — static
+frontend on Cloudflare, talking to a `gemini_web2api.py` backend running elsewhere.
 
 ## How it works, briefly
 
@@ -79,7 +102,7 @@ however many accounts you've added, skipping unhealthy ones automatically.
 ```
 gemini_web2api.py     the API server (core)
 account_manager.py    multi-account rotation, health tracking
-dashboard/            dashboard.html, chat.html, and their static server
+web/                  the website: landing page, dashboard, chat tester, and their static server
 sync/                 account-sync toolkit: keeper script, cookie receiver, browser extension
 docs/                 setup guides
 cloudflare/           optional Cloudflare Worker for exposing the API behind a domain

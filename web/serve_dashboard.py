@@ -1,6 +1,6 @@
 """
-Simple HTTP server for the Gemini Web2API dashboard.
-Serves dashboard.html at / with CORS headers.
+Simple HTTP server for the 0Hive website: the landing page (index.html), the live dashboard
+(dashboard.html), and the chat tester (chat.html), with CORS headers.
 No external dependencies — stdlib only.
 Port 8083.
 """
@@ -13,8 +13,8 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 class DashboardHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
-            self.path = "/dashboard.html"
+        if self.path == "/":
+            self.path = "/index.html"
         return super().do_GET()
 
     def end_headers(self):
