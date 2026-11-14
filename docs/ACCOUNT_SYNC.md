@@ -60,8 +60,10 @@ It automatically falls back to this mode whenever CDP mode (Option A) isn't reac
 Load `sync/extension/` as an unpacked extension in any Chromium-based browser (Developer mode →
 Load unpacked). Set `RECEIVER` and `SYNC_KEY` in `sync/extension/config.js` to match a running
 `sync/cookie_receiver.py` (it generates a random key on first run — copy it from
-`sync/sync_key.txt`). Click the extension's button to send every signed-in account once; it also
-repeats automatically every 30 minutes while the browser is open.
+`sync/sync_key.txt`). If your receiver runs anywhere other than `127.0.0.1`/`localhost`, also add
+its address to `host_permissions` in `sync/extension/manifest.json`, then reload the extension.
+Click the extension's button to send every signed-in account once; it also repeats automatically
+every 30 minutes while the browser is open.
 
 ## Picking a model
 
