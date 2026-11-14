@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Account Sync",
+  "version": "1.0",
+  "description": "One click: sends every Google account you are signed in to (with its email) to your Gemini API server.",
+  "permissions": ["cookies", "alarms", "storage", "tabs", "scripting"],
+  "host_permissions": ["https://*.google.com/*", "http://100.88.94.120:8090/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "Send Google accounts to Gemini API" }
+}

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0Hive Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-0:#020617;--bg-1:#0b1220;--bg-2:#111827;
+  --glass-fill:rgba(15,23,42,.45);--glass-border:rgba(148,163,184,.08);
+  --text-primary:#f8fafc;--text-secondary:#94a3b8;--text-muted:#475569;
+  --emerald:#10b981;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;
+  --gradient-1:linear-gradient(135deg,#10b981,#3b82f6);
+  --gradient-2:linear-gradient(135deg,#ef4444,#f59e0b);
+  --gradient-3:linear-gradient(135deg,#8b5cf6,#06b6d4);
+  --radius:12px;--blur:16px;
+}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg-0);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+.container{max-width:1440px;margin:0 auto;padding:20px}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--glass-border);margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.header h1{font-size:1.4rem;font-weight:700;background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-meta{display:flex;align-items:center;gap:16px;font-size:.8rem;color:var(--text-muted)}
+.header-meta .badge{padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:600;background:rgba(16,185,129,.15);color:var(--emerald);border:1px solid rgba(16,185,129,.2)}
+.header-meta .badge.offline{background:rgba(239,68,68,.15);color:var(--red);border-color:rgba(239,68,68,.2)}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+.status-dot.green{background:var(--emerald)}.status-dot.red{background:var(--red)}.status-dot.amber{background:var(--amber)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--glass-fill);backdrop-filter:blur(var(--blur));border:1px solid var(--glass-border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:transform .15s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gradient-1);opacity:.6}
+.stat-card.error::before{background:var(--gradient-2)}
+.stat-card.purple::before{background:var(--gradient-3)}
+.stat-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-value{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums}
+.stat-sub{font-size:.7rem;color:var(--text-secondary);margin-top:4px}
+
+/* Panels */
+.panel{background:var(--glass-fill);backdrop-filter:blur(var(--blur));border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.panel-header h3{font-size:.85rem;font-weight:600;color:var(--text-secondary)}
+.panel-body{padding:14px 18px;max-height:500px;overflow-y:auto}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* Request items */
+.request-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--glass-border);font-size:.78rem}
+.request-item:last-child{border-bottom:none}
+.request-time{color:var(--text-muted);font-variant-numeric:tabular-nums;min-width:70px;font-size:.72rem}
+.request-model{color:var(--blue);font-weight:500;min-width:110px;font-size:.72rem}
+.request-tokens{color:var(--amber);font-variant-numeric:tabular-nums;min-width:70px;font-size:.72rem}
+.request-duration{font-variant-numeric:tabular-nums;min-width:55px;font-size:.72rem}
+.request-status{min-width:36px;text-align:center;font-size:.72rem}
+.request-account{color:var(--purple);min-width:60px;font-size:.72rem}
+.status-ok{color:var(--emerald)}.status-err{color:var(--red)}
+
+/* Model chart */
+.model-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.model-name{min-width:130px;font-size:.78rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.model-fill{flex:1;height:22px;background:var(--bg-2);border-radius:4px;overflow:hidden}
+.model-fill-inner{height:100%;border-radius:4px;transition:width .3s ease}
+.model-count{min-width:40px;text-align:right;font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--text-primary)}
+
+/* Account cards */
+.account-card{background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:8px;padding:14px;margin-bottom:10px}
+.account-card:last-child{margin-bottom:0}
+.account-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.account-name{font-weight:600;font-size:.85rem}
+.health-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.health-dot.green{background:var(--emerald)}.health-dot.amber{background:var(--amber)}.health-dot.red{background:var(--red)}
+.account-stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:.72rem;color:var(--text-secondary)}
+.account-stats span{display:flex;align-items:center;gap:4px}
+.usage-bar{height:6px;background:var(--bg-2);border-radius:3px;overflow:hidden;margin-bottom:10px}
+.usage-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.account-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{padding:5px 12px;border-radius:6px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--text-secondary);font-size:.72rem;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:hover{background:rgba(255,255,255,.1);color:var(--text-primary)}
+.btn-green{border-color:rgba(16,185,129,.3);color:var(--emerald)}.btn-green:hover{background:rgba(16,185,129,.15)}
+.btn-red{border-color:rgba(239,68,68,.3);color:var(--red)}.btn-red:hover{background:rgba(239,68,68,.15)}
+.btn-blue{border-color:rgba(59,130,246,.3);color:var(--blue)}.btn-blue:hover{background:rgba(59,130,246,.15)}
+
+/* Forms */
+.form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
+.form-group input,.form-group select{padding:6px 10px;border-radius:6px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--text-primary);font-size:.78rem;font-family:inherit;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+
+/* Settings */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--glass-border);gap:12px}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:.8rem;color:var(--text-secondary)}
+.setting-input{padding:5px 10px;border-radius:6px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--text-primary);font-size:.8rem;width:100px;text-align:right;font-family:inherit}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--bg-2);border-radius:11px;transition:.2s;border:1px solid var(--glass-border)}
+.toggle .slider:before{content:'';position:absolute;height:16px;width:16px;left:2px;bottom:2px;background:var(--text-muted);border-radius:50%;transition:.2s}
+.toggle input:checked+.slider{background:rgba(16,185,129,.3);border-color:var(--emerald)}
+.toggle input:checked+.slider:before{transform:translateX(18px);background:var(--emerald)}
+
+/* Tabs */
+.tab-bar{display:flex;gap:2px;margin-bottom:16px;background:rgba(255,255,255,.03);border-radius:8px;padding:3px}
+.tab{padding:6px 14px;border-radius:6px;font-size:.78rem;color:var(--text-muted);cursor:pointer;transition:.15s;border:none;background:none;font-family:inherit}
+.tab:hover{color:var(--text-secondary)}
+.tab.active{background:rgba(255,255,255,.08);color:var(--text-primary)}
+
+/* Token chart canvas */
+.chart-container{position:relative;height:160px;margin:10px 0}
+.chart-canvas{width:100%;height:100%}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{padding:4px 8px;border-radius:6px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:var(--text-primary);font-size:.75rem;font-family:inherit}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--text-muted);border-radius:3px}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-size:.8rem;z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:rgba(16,185,129,.9);color:#fff}
+.toast.error{background:rgba(239,68,68,.9);color:#fff}
+
+/* ── Responsive: tablet (641-1024px) ───────────────────────────────────── */
+@media(max-width:1024px){
+  .container{padding:16px}
+  .grid-2,.grid-3{grid-template-columns:1fr 1fr}
+}
+/* ── Responsive: mobile (<=640px) ──────────────────────────────────────── */
+@media(max-width:640px){
+  html{-webkit-text-size-adjust:100%}
+  .container{padding:10px}
+  .header{padding:12px 0;margin-bottom:16px;gap:8px}
+  .header h1{font-size:1.1rem}
+  .header-meta{gap:8px;font-size:.72rem;width:100%;justify-content:space-between}
+  .header-meta a{padding:5px 10px!important;font-size:.78rem}
+  #uptimeDisplay{display:none}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
+  .stat-card{padding:12px}
+  .stat-value{font-size:1.25rem}
+  .grid-2,.grid-3{grid-template-columns:1fr;gap:12px}
+  .panel-header{padding:12px 14px}
+  .panel-body{padding:12px 14px}
+  /* Request feed rows: stack into two lines instead of 6 cramped columns */
+  .request-item{flex-wrap:wrap;row-gap:4px;padding:10px 0}
+  .request-time,.request-model,.request-tokens,.request-duration,.request-status,.request-account{min-width:0;flex:0 0 auto}
+  .request-time{order:1}.request-status{order:2;margin-left:auto}
+  .request-model{order:3;flex-basis:100%}
+  .request-tokens,.request-duration,.request-account{order:4;font-size:.7rem}
+  /* Add-account / settings forms: full-width stacked fields, bigger touch targets */
+  .form-row{flex-direction:column;align-items:stretch;gap:10px}
+  .form-group{width:100%}
+  .form-group input,.form-group select{width:100%!important;padding:9px 10px;font-size:16px} /* 16px avoids iOS auto-zoom */
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .filter-bar select,.filter-bar input{width:100%;padding:8px 10px}
+  .setting-row{flex-wrap:wrap}
+  .setting-input{width:90px}
+  .btn{padding:8px 14px;font-size:.78rem}
+  .account-top,.account-stats{gap:8px}
+  .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .chart-container{height:130px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🐝 0Hive</h1>
+      <span class="badge" id="versionBadge">v1.1.0</span>
+    </div>
+    <div class="header-meta">
+      <a href="chat.html" style="color:#6ea8ff;text-decoration:none;font-weight:600;padding:6px 14px;border:1px solid #2a4a7a;border-radius:8px;background:rgba(80,130,255,0.08);">💬 Test Chat</a>
+      <span><span class="status-dot green" id="serverDot"></span><span id="serverStatus">Connecting...</span></span>
+      <span id="uptimeDisplay">Uptime: --</span>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Requests</div>
+      <div class="stat-value" id="totalRequests">0</div>
+      <div class="stat-sub" id="totalRequestsSub">0 today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tokens Used</div>
+      <div class="stat-value" id="totalTokens">0</div>
+      <div class="stat-sub" id="totalTokensSub">prompt + completion</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Latency</div>
+      <div class="stat-value" id="avgLatency">0ms</div>
+      <div class="stat-sub">Per request</div>
+    </div>
+    <div class="stat-card error">
+      <div class="stat-label">Error Rate</div>
+      <div class="stat-value" id="errorRate">0%</div>
+      <div class="stat-sub" id="errorCount">0 errors</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Active Accounts</div>
+      <div class="stat-value" id="activeAccounts">0</div>
+      <div class="stat-sub" id="activeAccountsSub">of 0 total</div>
+    </div>
+  </div>
+
+  <!-- Token Usage Chart -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-header">
+      <h3>Token Usage Over Time</h3>
+      <div class="tab-bar" id="chartPeriodTabs">
+        <button class="tab active" data-period="hour">Hour</button>
+        <button class="tab" data-period="day">Day</button>
+        <button class="tab" data-period="week">Week</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container"><canvas id="tokenChart" class="chart-canvas"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Accounts + Model Usage -->
+  <div class="grid-2">
+    <!-- Account Management -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Account Management</h3>
+        <span style="font-size:.72rem;color:var(--text-muted)" id="accountSummary">0 accounts</span>
+      </div>
+      <div class="panel-body" id="accountList" style="max-height:600px">
+        <div style="text-align:center;color:var(--text-muted);padding:20px">Loading...</div>
+      </div>
+      <!-- Add Account Form -->
+      <div style="padding:14px 18px;border-top:1px solid var(--glass-border)">
+        <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">Add Account</div>
+        <div class="form-row">
+          <div class="form-group"><label>Name</label><input id="newAccName" placeholder="account-name"></div>
+          <div class="form-group"><label>Cookie File</label><input id="newAccCookie" placeholder="cookies/acc.json"></div>
+          <div class="form-group"><label>Auth User</label><input id="newAccUser" placeholder="0" style="width:60px"></div>
+          <div class="form-group"><label>Priority</label><input id="newAccPriority" placeholder="100" style="width:60px" type="number"></div>
+          <div class="form-group"><label>&nbsp;</label><button class="btn btn-green" onclick="addAccount()">Add</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Usage Breakdown -->
+    <div class="panel">
+      <div class="panel-header"><h3>Model Usage Breakdown</h3></div>
+      <div class="panel-body" id="modelChart">
+        <div style="text-align:center;color:var(--text-muted);padding:40px">No data yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Request Feed -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-header">
+      <h3>Live Request Feed</h3>
+      <div class="filter-bar">
+        <select id="filterModel"><option value="">All Models</option></select>
+        <select id="filterStatus"><option value="">All Status</option><option value="200">200</option><option value="400">400</option><option value="500">500</option></select>
+        <select id="filterAccount"><option value="">All Accounts</option></select>
+      </div>
+    </div>
+    <div class="panel-body" id="requestFeed" style="max-height:350px">
+      <div style="text-align:center;color:var(--text-muted);padding:40px">Waiting for requests...</div>
+    </div>
+  </div>
+
+  <!-- Request History (from DB) -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-header">
+      <h3>Request History</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.72rem;color:var(--text-muted)" id="historyInfo">Page 1</span>
+        <button class="btn" onclick="loadHistory(historyPage-1)">← Prev</button>
+        <button class="btn" onclick="loadHistory(historyPage+1)">Next →</button>
+      </div>
+    </div>
+    <div class="panel-body" id="historyFeed" style="max-height:300px">
+      <div style="text-align:center;color:var(--text-muted);padding:20px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="panel">
+    <div class="panel-header"><h3>Settings</h3></div>
+    <div class="panel-body">
+      <div class="setting-row">
+        <span class="setting-label">Rate Limit (req/window)</span>
+        <input class="setting-input" id="setRateLimit" type="number" value="50">
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Rate Limit Window (sec)</span>
+        <input class="setting-input" id="setRateWindow" type="number" value="60">
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Auto Fallback</span>
+        <label class="toggle"><input type="checkbox" id="setAutoFallback" checked><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Auto Disable on Error</span>
+        <label class="toggle"><input type="checkbox" id="setAutoDisable" checked><span class="slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Max Consecutive Errors</span>
+        <input class="setting-input" id="setMaxErrors" type="number" value="5">
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Retention Days</span>
+        <input class="setting-input" id="setRetention" type="number" value="7">
+      </div>
+      <div style="margin-top:12px;text-align:right">
+        <button class="btn btn-blue" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────
+const API_BASE = /0code\.uk$/.test(window.location.hostname)
+  ? 'https://gemini.0code.uk'
+  : `http://${window.location.hostname || 'localhost'}:8081`;
+const AUTH = {'Authorization': 'Bearer sk-gemini'};
+let chartPeriod = 'hour';
+let historyPage = 1;
+let lastFeedIds = new Set();
+let pollTimer = null;
+
+// ─── Toast ────────────────────────────────────────────────────────────────
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// ─── API Helpers ──────────────────────────────────────────────────────────
+async function api(path, opts={}) {
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {headers: AUTH, ...opts});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch(e) {
+    console.warn(`API ${path}:`, e.message);
+    return null;
+  }
+}
+
+// ─── Format helpers ───────────────────────────────────────────────────────
+function fmtNum(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return String(n);
+}
+function fmtUptime(s) {
+  const d = Math.floor(s/86400), h = Math.floor((s%86400)/3600), m = Math.floor((s%3600)/60);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtTs(ts) {
+  if (!ts) return 'never';
+  const d = new Date(ts * 1000);
+  return d.toLocaleString();
+}
+
+// ─── Main Stats Fetch ─────────────────────────────────────────────────────
+async function fetchStats() {
+  const data = await api('/v1/metrics');
+  if (!data) {
+    document.getElementById('serverDot').className = 'status-dot red';
+    document.getElementById('serverStatus').textContent = 'Offline';
+    return;
+  }
+  document.getElementById('serverDot').className = 'status-dot green';
+  document.getElementById('serverStatus').textContent = 'Live';
+  document.getElementById('uptimeDisplay').textContent = 'Uptime: ' + fmtUptime(data.uptime_seconds || 0);
+
+  // Stats cards
+  const total = data.total_requests || 0;
+  const tok = data.total_tokens || {};
+  const totalT = tok.total || 0;
+  document.getElementById('totalRequests').textContent = fmtNum(total);
+  document.getElementById('totalTokens').textContent = fmtNum(totalT);
+  document.getElementById('avgLatency').textContent = (data.avg_latency_ms || 0).toFixed(0) + 'ms';
+
+  const sc = data.status_codes || {};
+  const errors = (sc['400']||0) + (sc['401']||0) + (sc['429']||0) + (sc['500']||0);
+  const errRate = total > 0 ? ((errors/total)*100).toFixed(1) : '0';
+  document.getElementById('errorRate').textContent = errRate + '%';
+  document.getElementById('errorCount').textContent = errors + ' errors';
+
+  // Model chart
+  updateModelChart(data.model_usage || {});
+
+  // Live feed
+  const recent = data.recent_requests || [];
+  updateLiveFeed(recent);
+
+  // Token chart
+  drawTokenChart();
+}
+
+// ─── Live Feed ────────────────────────────────────────────────────────────
+function updateLiveFeed(requests) {
+  const feed = document.getElementById('requestFeed');
+  if (!requests.length) return;
+  // Only add new items
+  const fM = document.getElementById('filterModel').value;
+  const fS = document.getElementById('filterStatus').value;
+  const fA = document.getElementById('filterAccount').value;
+
+  let added = 0;
+  for (const r of requests) {
+    const key = r.time + r.model + (r.duration||0);
+    if (lastFeedIds.has(key)) continue;
+    lastFeedIds.add(key);
+    if (lastFeedIds.size > 200) { const first = lastFeedIds.values().next().value; lastFeedIds.delete(first); }
+
+    // Filter
+    if (fM && r.model !== fM) continue;
+    if (fS && String(r.status) !== fS) continue;
+    if (fA && r.account !== fA) continue;
+
+    const div = document.createElement('div');
+    div.className = 'request-item';
+    const sc = r.status < 400 ? 'status-ok' : 'status-err';
+    div.innerHTML = `
+      <span class="request-time">${r.time||'--:--'}</span>
+      <span class="request-model">${r.model||'?'}</span>
+      <span class="request-tokens">${r.tokens ? fmtNum(r.tokens.total_tokens||0) : '-'} tok</span>
+      <span class="request-duration ${sc}">${(r.duration||0).toFixed(0)}ms</span>
+      <span class="request-status ${sc}">${r.status||'?'}</span>
+      <span class="request-account">${r.account||''}</span>
+    `;
+    feed.insertBefore(div, feed.firstChild);
+    added++;
+  }
+  if (added && feed.querySelector('[style*="text-align:center"]')) feed.innerHTML = '';
+  while (feed.children.length > 50) feed.removeChild(feed.lastChild);
+}
+
+// ─── Model Chart ──────────────────────────────────────────────────────────
+function updateModelChart(usage) {
+  const chart = document.getElementById('modelChart');
+  const entries = Object.entries(usage).sort((a,b) => b[1]-a[1]);
+  const total = entries.reduce((s,[,c]) => s+c, 0);
+  if (!total) { chart.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px">No data yet</div>'; return; }
+  const colors = ['var(--blue)','var(--emerald)','var(--amber)','var(--purple)','var(--red)','var(--cyan)'];
+  let html = '';
+  entries.forEach(([model, count], i) => {
+    const pct = (count/total*100).toFixed(1);
+    html += `<div class="model-bar">
+      <span class="model-name" title="${model}">${model}</span>
+      <div class="model-fill"><div class="model-fill-inner" style="width:${pct}%;background:${colors[i%colors.length]}"></div></div>
+      <span class="model-count">${count}</span>
+    </div>`;
+  });
+  chart.innerHTML = html;
+}
+
+// ─── Token Chart (Canvas) ─────────────────────────────────────────────────
+async function drawTokenChart() {
+  const data = await api(`/v1/dashboard/tokens?period=${chartPeriod}`);
+  const canvas = document.getElementById('tokenChart');
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * devicePixelRatio;
+  canvas.height = rect.height * devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const buckets = (data && data.buckets) || [];
+  if (buckets.length < 2) {
+    ctx.fillStyle = '#475569';
+    ctx.font = '13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Not enough data for this period', W/2, H/2);
+    return;
+  }
+
+  const maxVal = Math.max(...buckets.map(b => b.total_tok || 0), 1) * 1.2;
+  const step = W / (buckets.length - 1);
+  const pad = 20;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(148,163,184,0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + ((H - 2*pad) / 4) * i;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '10px system-ui'; ctx.textAlign = 'left';
+    ctx.fillText(fmtNum(Math.round(maxVal * (1 - i/4))), 4, y - 3);
+  }
+
+  // Bars
+  const barW = Math.max(2, Math.min(20, step * 0.6));
+  buckets.forEach((b, i) => {
+    const x = i * step;
+    const h = ((b.total_tok || 0) / maxVal) * (H - 2*pad);
+    const y = H - pad - h;
+    const grad = ctx.createLinearGradient(x, y, x, H - pad);
+    grad.addColorStop(0, 'rgba(59,130,246,0.7)');
+    grad.addColorStop(1, 'rgba(16,185,129,0.3)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x - barW/2, y, barW, h, 3);
+    ctx.fill();
+  });
+
+  // Line overlay
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  buckets.forEach((b, i) => {
+    const x = i * step;
+    const y = H - pad - ((b.total_tok || 0) / maxVal) * (H - 2*pad);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+// ─── Accounts ─────────────────────────────────────────────────────────────
+async function fetchAccounts() {
+  const data = await api('/v1/dashboard/accounts');
+  if (!data) return;
+  const list = data.accounts || [];
+  const enabled = data.enabled_accounts || 0;
+  const healthy = data.healthy_accounts || 0;
+  document.getElementById('accountSummary').textContent = `${healthy}/${list.length} healthy, ${enabled} enabled`;
+  document.getElementById('activeAccounts').textContent = enabled;
+  document.getElementById('activeAccountsSub').textContent = `of ${list.length} total`;
+
+  // Update filter dropdown
+  const sel = document.getElementById('filterAccount');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Accounts</option>';
+  list.forEach(a => {
+    sel.innerHTML += `<option value="${a.name}" ${a.name===cur?'selected':''}>${a.name}</option>`;
+  });
+
+  const container = document.getElementById('accountList');
+  if (!list.length) { container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px">No accounts configured</div>'; return; }
+
+  let html = '';
+  list.forEach(a => {
+    const hc = a.error_disabled ? 'red' : (a.enabled && a.healthy) ? 'green' : 'amber';
+    const ht = a.error_disabled ? 'Disabled' : (a.enabled && a.healthy) ? 'Healthy' : 'Degraded';
+    const usagePct = a.usage_limit > 0 ? Math.min(100, (a.usage_count / a.usage_limit * 100)) : 0;
+    const barColor = usagePct > 80 ? 'var(--red)' : usagePct > 50 ? 'var(--amber)' : 'var(--emerald)';
+
+    // Cookie status
+    let cookieInfo = '<span style="color:var(--text-muted)">No cookie</span>';
+    if (a.has_cookie) {
+      if (a.cookie_expiry > 0) {
+        const hoursLeft = (a.cookie_expiry - Date.now()/1000) / 3600;
+        if (hoursLeft < 0) cookieInfo = '<span style="color:var(--red)">Expired</span>';
+        else if (hoursLeft < 24) cookieInfo = `<span style="color:var(--amber)">Expiring in ${hoursLeft.toFixed(1)}h</span>`;
+        else cookieInfo = `<span style="color:var(--emerald)">Valid (${hoursLeft.toFixed(0)}h left)</span>`;
+      } else {
+        cookieInfo = '<span style="color:var(--emerald)">Loaded</span>';
+      }
+    }
+
+    html += `<div class="account-card">
+      <div class="account-top">
+        <span class="health-dot ${hc}"></span>
+        <span class="account-name">${a.name}</span>
+        <span style="font-size:.72rem;color:${hc==='green'?'var(--emerald)':hc==='red'?'var(--red)':'var(--amber)'}">${ht}</span>
+        <span style="font-size:.72rem;color:var(--text-muted)">P${a.priority||100}</span>
+      </div>
+      <div class="account-stats">
+        <span>📊 ${a.total_requests} reqs</span>
+        <span>⏱️ ${(a.avg_latency_ms||0).toFixed(0)}ms avg</span>
+        <span>❌ ${a.total_errors} errors</span>
+        <span>🔄 ${a.consecutive_errors} consecutive</span>
+        <span>${cookieInfo}</span>
+      </div>
+      ${a.usage_limit > 0 ? `<div class="usage-bar"><div class="usage-bar-fill" style="width:${usagePct}%;background:${barColor}"></div></div>
+      <div style="font-size:.68rem;color:var(--text-muted);margin-bottom:8px">${a.usage_count} / ${a.usage_limit} (${usagePct.toFixed(0)}%)</div>` : ''}
+      ${a.last_error ? `<div style="font-size:.68rem;color:var(--red);margin-bottom:8px;word-break:break-all">Last error: ${a.last_error}</div>` : ''}
+      <div class="account-actions">
+        <button class="btn btn-green" onclick="accAction('enable','${a.name}')">Enable</button>
+        <button class="btn btn-red" onclick="accAction('disable','${a.name}')">Disable</button>
+        <button class="btn btn-blue" onclick="accAction('reload','${a.name}')">Reload Cookie</button>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+async function accAction(action, name) {
+  const res = await api(`/v1/dashboard/account/${name}/${action}`, {method: 'POST'});
+  toast(res ? `${action}: ${name}` : `Failed to ${action}`, res ? 'success' : 'error');
+  setTimeout(fetchAccounts, 500);
+}
+
+async function addAccount() {
+  const name = document.getElementById('newAccName').value.trim();
+  const cookie_file = document.getElementById('newAccCookie').value.trim();
+  const auth_user = document.getElementById('newAccUser').value.trim();
+  const priority = parseInt(document.getElementById('newAccPriority').value) || 100;
+  if (!name) { toast('Name required', 'error'); return; }
+  const res = await api('/v1/dashboard/account/add', {
+    method: 'POST',
+    headers: {...AUTH, 'Content-Type': 'application/json'},
+    body: JSON.stringify({name, cookie_file, auth_user: auth_user || null, priority})
+  });
+  toast(res ? 'Account added' : 'Failed to add', res ? 'success' : 'error');
+  if (res) {
+    document.getElementById('newAccName').value = '';
+    document.getElementById('newAccCookie').value = '';
+    document.getElementById('newAccUser').value = '';
+    document.getElementById('newAccPriority').value = '100';
+    fetchAccounts();
+  }
+}
+
+// ─── History ──────────────────────────────────────────────────────────────
+async function loadHistory(page) {
+  if (page < 1) page = 1;
+  historyPage = page;
+  const data = await api(`/v1/dashboard/requests?page=${page}&limit=30`);
+  if (!data) return;
+  document.getElementById('historyInfo').textContent = `Page ${data.page}/${data.pages} (${data.total} total)`;
+  const feed = document.getElementById('historyFeed');
+  const reqs = data.requests || [];
+  if (!reqs.length) { feed.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px">No requests</div>'; return; }
+  let html = '';
+  reqs.forEach(r => {
+    const sc = r.status < 400 ? 'status-ok' : 'status-err';
+    const ts = new Date(r.timestamp * 1000);
+    const time = ts.toLocaleTimeString();
+    html += `<div class="request-item">
+      <span class="request-time">${time}</span>
+      <span class="request-model">${r.model||'?'}</span>
+      <span class="request-tokens">${fmtNum(r.total_tokens||0)} tok</span>
+      <span class="request-duration ${sc}">${(r.duration_ms||0).toFixed(0)}ms</span>
+      <span class="request-status ${sc}">${r.status||'?'}</span>
+      <span class="request-account">${r.account_name||''}</span>
+    </div>`;
+  });
+  feed.innerHTML = html;
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────
+async function loadSettings() {
+  const data = await api('/v1/dashboard/config');
+  if (!data) return;
+  const f = data.features || {};
+  document.getElementById('setRateLimit').value = f.rate_limit_per_account || 50;
+  document.getElementById('setRateWindow').value = f.rate_limit_window_sec || 60;
+  document.getElementById('setAutoFallback').checked = f.auto_fallback !== false;
+  document.getElementById('setAutoDisable').checked = f.auto_disable_on_error !== false;
+  document.getElementById('setMaxErrors').value = f.max_consecutive_errors || 5;
+  document.getElementById('setRetention').value = data.retention_days || 7;
+}
+
+async function saveSettings() {
+  const payload = {
+    features: {
+      rate_limit_per_account: parseInt(document.getElementById('setRateLimit').value) || 50,
+      rate_limit_window_sec: parseInt(document.getElementById('setRateWindow').value) || 60,
+      auto_fallback: document.getElementById('setAutoFallback').checked,
+      auto_disable_on_error: document.getElementById('setAutoDisable').checked,
+      max_consecutive_errors: parseInt(document.getElementById('setMaxErrors').value) || 5,
+    },
+    retention_days: parseInt(document.getElementById('setRetention').value) || 7,
+  };
+  const res = await api('/v1/dashboard/config', {
+    method: 'POST',
+    headers: {...AUTH, 'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  toast(res ? 'Settings saved' : 'Failed to save', res ? 'success' : 'error');
+}
+
+// ─── Chart Period Tabs ────────────────────────────────────────────────────
+document.getElementById('chartPeriodTabs').addEventListener('click', e => {
+  if (e.target.classList.contains('tab')) {
+    document.querySelectorAll('#chartPeriodTabs .tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    chartPeriod = e.target.dataset.period;
+    drawTokenChart();
+  }
+});
+
+// ─── Filter listeners ─────────────────────────────────────────────────────
+document.getElementById('filterModel').addEventListener('change', () => { lastFeedIds.clear(); });
+document.getElementById('filterStatus').addEventListener('change', () => { lastFeedIds.clear(); });
+document.getElementById('filterAccount').addEventListener('change', () => { lastFeedIds.clear(); });
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+async function init() {
+  // Fetch version
+  try {
+    const r = await fetch(`${API_BASE}/`, {headers: AUTH});
+    if (r.ok) {
+      const d = await r.json();
+      if (d.version) document.getElementById('versionBadge').textContent = 'v' + d.version;
+    }
+  } catch(e) {}
+
+  await Promise.all([fetchStats(), fetchAccounts(), loadSettings(), loadHistory(1)]);
+}
+
+init();
+setInterval(fetchStats, 200);
+setInterval(fetchAccounts, 2000);
+setInterval(() => loadHistory(historyPage), 10000);
+</script>
+</body>
+</html>

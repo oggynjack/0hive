@@ -1,0 +1,10 @@
+services:
+  0hive:
+    build: .
+    container_name: 0hive
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./config.json:/app/config.json
+      - ./cookies:/app/cookies
+    restart: unless-stopped

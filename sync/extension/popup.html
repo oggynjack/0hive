@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8">
+<style>
+ body{font:14px system-ui;margin:0;width:330px;background:#14161a;color:#eee}
+ .w{padding:16px} h1{font-size:15px;margin:0 0 4px} p{margin:4px 0 12px;color:#9aa;font-size:12px}
+ button{width:100%;padding:12px;border:0;border-radius:10px;background:#3b82f6;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+ button:disabled{opacity:.6;cursor:wait} #out{margin-top:12px;font-size:12px;line-height:1.5}
+ .ok{color:#4ade80}.err{color:#f87171} li{margin:2px 0;word-break:break-all} ul{padding-left:18px;margin:6px 0}
+</style>
+<div class="w"><h1>Gemini Account Sync</h1>
+<p>Sends every Google account signed in on this browser to your Gemini API. Each account is recognised by its email. Also repeats automatically every 30 minutes.</p>
+<button id="go">Send my accounts now</button><div id="out"></div></div>
+<script src="popup.js"></script>

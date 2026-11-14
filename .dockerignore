@@ -1,0 +1,12 @@
+.git
+.idea
+.venv
+__pycache__
+*.pyc
+config.json
+cookies/
+browser-profile/
+dashboard.db*
+.env
+sync/sync_key.txt
+sync/keeper_status.json
