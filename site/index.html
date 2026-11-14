@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0Hive — your Gemini login never dies again</title>
+<meta name="description" content="A self-healing, multi-account OpenAI-compatible gateway for Gemini's web app. Open source, built on gemini-web2api.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22 fill=%22%23ffb347%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07080c; --bg-2:#0c0e14; --panel:#0f1118;
+    --ink:#f2f4f7; --ink-dim:#9aa3b2; --ink-faint:#5c6472;
+    --amber:#ffb454; --amber-dim:#8a6a3a; --cyan:#5fd4ff;
+    --line:rgba(255,255,255,.08); --radius:14px;
+    --font-display:'Space Grotesk',system-ui,sans-serif;
+    --font-body:'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:auto}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-body);overflow-x:hidden;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  ::selection{background:var(--amber);color:#000}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px}
+
+  /* Skip link for keyboard users */
+  .skip{position:absolute;left:-999px;top:0;background:var(--amber);color:#000;padding:10px 16px;z-index:999;border-radius:8px}
+  .skip:focus{left:16px;top:16px}
+
+  /* Nav */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;backdrop-filter:blur(10px);background:linear-gradient(rgba(7,8,12,.85),rgba(7,8,12,.4));border-bottom:1px solid transparent;transition:border-color .3s}
+  nav.scrolled{border-color:var(--line)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:1.15rem;text-decoration:none}
+  .brand svg{width:26px;height:26px;flex-shrink:0}
+  .nav-links{display:flex;align-items:center;gap:28px;font-size:.92rem;color:var(--ink-dim)}
+  .nav-links a{text-decoration:none;transition:color .2s}
+  .nav-links a:hover,.nav-links a:focus-visible{color:var(--ink)}
+  .nav-toggle{display:none;background:none;border:1px solid var(--line);border-radius:8px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--ink)}
+  @media(max-width:719px){
+    .nav-toggle{display:inline-flex}
+    .nav-links{position:fixed;top:64px;left:16px;right:16px;flex-direction:column;align-items:stretch;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;
+      max-height:0;overflow:hidden;opacity:0;pointer-events:none;transition:max-height .3s ease,opacity .2s ease}
+    .nav-links.open{max-height:360px;opacity:1;pointer-events:auto}
+    .nav-links a{padding:13px 14px;border-radius:9px}
+    .nav-links a:hover,.nav-links a:focus-visible{background:rgba(255,255,255,.05)}
+    .nav-links .btn{margin-top:4px}
+  }
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;font-weight:600;font-size:.88rem;text-decoration:none;border:1px solid var(--line);transition:transform .2s,border-color .2s,background .2s}
+  .btn:hover,.btn:focus-visible{transform:translateY(-1px);border-color:rgba(255,255,255,.25)}
+  .btn-primary{background:var(--amber);color:#1a1200;border-color:var(--amber)}
+  .btn-primary:hover{background:#ffc679}
+
+  /* Hero */
+  header.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding-top:90px;isolation:isolate}
+  #heroCanvas{position:absolute;inset:0;z-index:-1;width:100%;height:100%;display:block}
+  .hero-poster{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 60% 30%,rgba(255,180,84,.14),transparent 55%),radial-gradient(ellipse at 20% 80%,rgba(95,212,255,.10),transparent 50%);display:none}
+  .no-webgl .hero-poster, .reduced-motion .hero-poster{display:block}
+  .no-webgl #heroCanvas, .reduced-motion #heroCanvas{display:none}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:.76rem;letter-spacing:.06em;color:var(--amber);text-transform:uppercase;margin-bottom:22px;opacity:0}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  h1.hero-title{font-family:var(--font-display);font-weight:700;font-size:clamp(2.4rem,6.6vw,5.1rem);letter-spacing:-.02em;line-height:1.03;max-width:16ch}
+  h1.hero-title .word{display:inline-block;overflow:hidden;vertical-align:top}
+  h1.hero-title .word span{display:inline-block;transform:translateY(110%)}
+  h1.hero-title .amber{color:var(--amber)}
+  .hero-sub{margin-top:26px;font-size:clamp(1rem,1.6vw,1.22rem);color:var(--ink-dim);max-width:46ch;opacity:0}
+  .hero-ctas{margin-top:36px;display:flex;gap:14px;flex-wrap:wrap;opacity:0}
+  .hero-meta{margin-top:70px;display:flex;gap:36px;flex-wrap:wrap;opacity:0}
+  .hero-meta .stat b{display:block;font-family:var(--font-display);font-size:1.5rem;color:var(--ink)}
+  .hero-meta .stat span{font-size:.8rem;color:var(--ink-faint)}
+  .scroll-cue{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink-faint);font-size:.72rem;font-family:var(--font-mono);letter-spacing:.08em;opacity:0}
+  .scroll-cue .line{width:1px;height:34px;background:linear-gradient(var(--ink-faint),transparent);animation:scrollpulse 2s ease-in-out infinite}
+  @keyframes scrollpulse{0%,100%{opacity:.2}50%{opacity:1}}
+
+  /* Section scaffolding */
+  section{padding:120px 0;position:relative}
+  .section-head{max-width:640px;margin-bottom:64px}
+  .kicker{font-family:var(--font-mono);font-size:.78rem;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+  h2{font-family:var(--font-display);font-weight:600;font-size:clamp(1.7rem,3.6vw,2.6rem);letter-spacing:-.01em;line-height:1.15}
+  .section-head p{margin-top:16px;color:var(--ink-dim);font-size:1.05rem;max-width:56ch}
+  .reveal-word .word{display:inline-block;overflow:hidden;vertical-align:top}
+  .reveal-word .word span{display:inline-block;transform:translateY(100%)}
+  .reveal-up{opacity:0;transform:translateY(28px)}
+
+  /* Problem section */
+  .problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  @media(max-width:860px){.problem-grid{grid-template-columns:1fr}}
+  .problem-card{background:var(--bg-2);padding:32px 28px}
+  .problem-card .ico{width:34px;height:34px;color:var(--ink-faint);margin-bottom:18px}
+  .problem-card h3{font-family:var(--font-display);font-size:1.08rem;font-weight:600;margin-bottom:10px}
+  .problem-card p{color:var(--ink-dim);font-size:.92rem}
+
+  /* Solution cards */
+  .sync-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:900px){.sync-grid{grid-template-columns:1fr}}
+  .sync-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:30px 26px;position:relative;overflow:hidden;transition:border-color .25s,transform .25s}
+  .sync-card:hover{border-color:rgba(255,180,84,.35);transform:translateY(-4px)}
+  .sync-card .tag{font-family:var(--font-mono);font-size:.7rem;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,180,84,.3);border-radius:999px;padding:4px 10px;display:inline-block;margin-bottom:18px}
+  .sync-card h3{font-family:var(--font-display);font-size:1.2rem;margin-bottom:10px}
+  .sync-card p{color:var(--ink-dim);font-size:.93rem}
+  .sync-card .rec{position:absolute;top:22px;right:22px;font-size:.68rem;color:var(--amber);font-family:var(--font-mono)}
+
+  /* Feature grid */
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px 32px}
+  @media(max-width:900px){.feat-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.feat-grid{grid-template-columns:1fr}}
+  .feat{display:flex;gap:16px}
+  .feat .ico{width:22px;height:22px;flex-shrink:0;color:var(--amber);margin-top:3px}
+  .feat h4{font-family:var(--font-display);font-size:1.02rem;margin-bottom:6px}
+  .feat p{color:var(--ink-dim);font-size:.88rem}
+
+  /* Dashboard preview (authored mock, no live screenshots/real data) */
+  .preview-shell{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 40px 100px -40px rgba(0,0,0,.6)}
+  .preview-bar{display:flex;gap:7px;margin-bottom:18px}
+  .preview-bar span{width:10px;height:10px;border-radius:50%;background:var(--line)}
+  .preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:700px){.preview-grid{grid-template-columns:repeat(2,1fr)}}
+  .preview-stat{background:var(--bg-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .preview-stat .l{font-size:.68rem;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+  .preview-stat .v{font-family:var(--font-display);font-size:1.3rem;margin-top:4px}
+  .preview-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:9px;font-size:.82rem}
+  .preview-row+.preview-row{margin-top:6px}
+  .preview-row.ok{background:rgba(103,217,124,.06)}
+  .preview-dot{width:7px;height:7px;border-radius:50%;background:#67d97c;flex-shrink:0}
+  .preview-row .email{font-family:var(--font-mono);color:var(--ink-dim);flex:1}
+  .preview-row .pill{font-size:.7rem;color:#67d97c;background:rgba(103,217,124,.12);padding:2px 9px;border-radius:999px}
+
+  /* Code block */
+  .code-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:860px){.code-wrap{grid-template-columns:1fr}}
+  pre.code{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:24px;font-family:var(--font-mono);font-size:.84rem;overflow-x:auto;color:var(--ink-dim);line-height:1.7}
+  pre.code .c1{color:var(--amber)}
+  pre.code .c2{color:var(--cyan)}
+  pre.code .c3{color:var(--ink-faint)}
+
+  /* Final CTA */
+  .cta-band{text-align:center;padding:140px 0 160px}
+  .cta-band h2{max-width:720px;margin:0 auto}
+  .cta-band .hero-ctas{justify-content:center;opacity:1;margin-top:34px}
+
+  footer{border-top:1px solid var(--line);padding:48px 0 60px;font-size:.85rem;color:var(--ink-faint)}
+  .foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px}
+  .foot-grid a{text-decoration:none;color:var(--ink-dim)}
+  .foot-grid a:hover{color:var(--ink)}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important}
+  }
+</style>
+</head>
+<body>
+<a href="#main" class="skip">Skip to content</a>
+
+<nav id="nav">
+  <a href="#top" class="brand" aria-label="0Hive home">
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="#ffb454" stroke-width="2"/><circle cx="16" cy="6" r="3" fill="#ffb454"/><circle cx="25" cy="21" r="3" fill="#5fd4ff"/><circle cx="7" cy="21" r="3" fill="#5fd4ff"/><path d="M16 6 25 21 7 21Z" stroke="#ffb454" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    0Hive
+  </a>
+  <div class="nav-links" id="navLinks">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#start">Quickstart</a>
+    <a href="https://github.com/oggynjack/0hive" class="btn" id="navGh">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.98 5.24.98 11.5c0 5 3.24 9.24 7.74 10.74.57.1.78-.25.78-.55v-2.1c-3.15.68-3.82-1.36-3.82-1.36-.52-1.3-1.26-1.65-1.26-1.65-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1 1.73 2.64 1.23 3.29.94.1-.73.4-1.23.72-1.51-2.52-.29-5.17-1.26-5.17-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.5-1.45.11-3.02 0 0 .96-.31 3.15 1.16a10.9 10.9 0 0 1 5.73 0c2.2-1.47 3.15-1.16 3.15-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.66 5.3-5.19 5.59.41.35.77 1.04.77 2.1v3.11c0 .3.2.66.79.55A10.52 10.52 0 0 0 23 11.5C23 5.24 18.27.5 12 .5Z"/></svg>
+      View on GitHub
+    </a>
+  </div>
+  <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Open menu">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</nav>
+
+<main id="main">
+  <header class="hero" id="top">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="hero-poster" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="eyebrow"><span class="dot"></span> open source · MIT licensed</div>
+      <h1 class="hero-title">
+        <span class="word"><span>Your</span></span> <span class="word"><span>Gemini</span></span> <span class="word"><span>login</span></span><br>
+        <span class="word"><span class="amber">never</span></span> <span class="word"><span class="amber">dies</span></span> <span class="word"><span class="amber">again.</span></span>
+      </h1>
+      <p class="hero-sub">0Hive is a self-healing, multi-account OpenAI-compatible gateway for Gemini's web app. When one account's session rotates out, another quietly takes over — with a live dashboard to watch it happen.</p>
+      <div class="hero-ctas">
+        <a href="https://github.com/oggynjack/0hive" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.98 5.24.98 11.5c0 5 3.24 9.24 7.74 10.74.57.1.78-.25.78-.55v-2.1c-3.15.68-3.82-1.36-3.82-1.36-.52-1.3-1.26-1.65-1.26-1.65-1.03-.7.08-.69.08-.69 1.14.08 1.74 1.17 1.74 1.17 1 1.73 2.64 1.23 3.29.94.1-.73.4-1.23.72-1.51-2.52-.29-5.17-1.26-5.17-5.6 0-1.24.44-2.25 1.17-3.04-.12-.29-.5-1.45.11-3.02 0 0 .96-.31 3.15 1.16a10.9 10.9 0 0 1 5.73 0c2.2-1.47 3.15-1.16 3.15-1.16.62 1.57.23 2.73.11 3.02.73.79 1.17 1.8 1.17 3.04 0 4.35-2.66 5.3-5.19 5.59.41.35.77 1.04.77 2.1v3.11c0 .3.2.66.79.55A10.52 10.52 0 0 0 23 11.5C23 5.24 18.27.5 12 .5Z"/></svg>
+          Clone the repo
+        </a>
+        <a href="#start" class="btn">Read the quickstart →</a>
+      </div>
+      <div class="hero-meta">
+        <div class="stat"><b>3</b><span>sync strategies</span></div>
+        <div class="stat"><b>&#8734;</b><span>accounts, rotated automatically</span></div>
+        <div class="stat"><b>MIT</b><span>fully open source</span></div>
+      </div>
+    </div>
+    <div class="scroll-cue"><span>SCROLL</span><span class="line"></span></div>
+  </header>
+
+  <section id="problem">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">The problem</div>
+        <h2 class="reveal-word"><span class="word"><span>Every</span></span> <span class="word"><span>unofficial</span></span> <span class="word"><span>Gemini</span></span> <span class="word"><span>wrapper</span></span> <span class="word"><span>has</span></span> <span class="word"><span>the</span></span> <span class="word"><span>same</span></span> <span class="word"><span>failure</span></span> <span class="word"><span>mode.</span></span></h2>
+        <p>Web sessions quietly expire. Copying cookies between machines gets flagged. And checking by hand means you only find out it's broken when something else fails downstream.</p>
+      </div>
+      <div class="problem-grid">
+        <div class="problem-card">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8v5M12 16h.01M12 3 2 20h20L12 3Z"/></svg>
+          <h3>Sessions rot in ~7 days</h3>
+          <p>Nothing refreshes a session you're not actively using, so it goes stale right when you need it.</p>
+        </div>
+        <div class="problem-card">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3>Copied cookies get rejected</h3>
+          <p>Google ties sensitive cookies to how and where they were captured. A plain export-and-replay often just doesn't authenticate.</p>
+        </div>
+        <div class="problem-card">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <h3>One account, one point of failure</h3>
+          <p>No fallback means every rate limit or hiccup becomes your outage.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">How 0Hive fixes it</div>
+        <h2 class="reveal-word"><span class="word"><span>Pick</span></span> <span class="word"><span>the</span></span> <span class="word"><span>sync</span></span> <span class="word"><span>method</span></span> <span class="word"><span>that</span></span> <span class="word"><span>fits</span></span> <span class="word"><span>how</span></span> <span class="word"><span>you</span></span> <span class="word"><span>work.</span></span></h2>
+        <p>Three independent ways to keep accounts alive — run one, or all three.</p>
+      </div>
+      <div class="sync-grid">
+        <div class="sync-card reveal-up">
+          <span class="rec">recommended</span>
+          <span class="tag">CDP mode</span>
+          <h3>Attach to your real browser</h3>
+          <p>Reads whichever Google accounts are signed in to the browser you already use every day, over its DevTools port. Since it's genuinely your session, nothing looks automated.</p>
+        </div>
+        <div class="sync-card reveal-up">
+          <span class="tag">Isolated profile</span>
+          <h3>One dedicated login</h3>
+          <p>Sign in once in a separate browser profile; a background keeper re-exports fresh cookies from it every 30 minutes, forever.</p>
+        </div>
+        <div class="sync-card reveal-up">
+          <span class="tag">Extension</span>
+          <h3>One click, every account</h3>
+          <p>A browser extension that finds every signed-in account and sends it to your sync server, identified by email, on a timer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">What you get</div>
+        <h2 class="reveal-word"><span class="word"><span>One</span></span> <span class="word"><span>gateway.</span></span> <span class="word"><span>Every</span></span> <span class="word"><span>account</span></span> <span class="word"><span>you</span></span> <span class="word"><span>add.</span></span></h2>
+      </div>
+      <div class="feat-grid">
+        <div class="feat"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v18M3 12h18"/></svg><div><h4>OpenAI-compatible</h4><p>Drop-in /v1/chat/completions and /v1/models — point your existing client at it.</p></div></div>
+        <div class="feat"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 6h8M7 7.5 11 16M17 7.5 13 16"/></svg><div><h4>Automatic failover</h4><p>A stale or rate-limited account is skipped transparently; the next healthy one answers instead.</p></div></div>
+        <div class="feat"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div><h4>Live dashboard</h4><p>Requests, tokens, latency, and per-account health, updating in real time. Fully responsive.</p></div></div>
+        <div class="feat"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><h4>Built-in chat tester</h4><p>Try it immediately with a live model list pulled from the server — never a hardcoded, outdated name.</p></div></div>
+        <div class="feat"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 2 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg><div><h4>Self-healing</h4><p>No account ever gets manually re-logged-in on a deadline — the keeper refreshes it before it matters.</p></div></div>
+        <div class="feat"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><div><h4>Open source, MIT</h4><p>Fork it, self-host it, read every line. Built on gemini-web2api.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboard">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">See it running</div>
+        <h2 class="reveal-word"><span class="word"><span>Watch</span></span> <span class="word"><span>every</span></span> <span class="word"><span>account's</span></span> <span class="word"><span>health</span></span> <span class="word"><span>at</span></span> <span class="word"><span>a</span></span> <span class="word"><span>glance.</span></span></h2>
+        <p>An illustrative preview of the dashboard that ships with 0Hive — your real data, your real accounts.</p>
+      </div>
+      <div class="preview-shell reveal-up">
+        <div class="preview-bar"><span></span><span></span><span></span></div>
+        <div class="preview-grid">
+          <div class="preview-stat"><div class="l">Requests</div><div class="v">1,204</div></div>
+          <div class="preview-stat"><div class="l">Avg latency</div><div class="v">3ms</div></div>
+          <div class="preview-stat"><div class="l">Error rate</div><div class="v">0.0%</div></div>
+          <div class="preview-stat"><div class="l">Accounts</div><div class="v">8 / 8</div></div>
+        </div>
+        <div class="preview-row ok"><span class="preview-dot"></span><span class="email">account-one@example.com</span><span class="pill">healthy</span></div>
+        <div class="preview-row ok"><span class="preview-dot"></span><span class="email">account-two@example.com</span><span class="pill">healthy</span></div>
+        <div class="preview-row ok"><span class="preview-dot"></span><span class="email">account-three@example.com</span><span class="pill">healthy</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Quickstart</div>
+        <h2 class="reveal-word"><span class="word"><span>Running</span></span> <span class="word"><span>in</span></span> <span class="word"><span>under</span></span> <span class="word"><span>five</span></span> <span class="word"><span>minutes.</span></span></h2>
+      </div>
+      <div class="code-wrap">
+        <pre class="code reveal-up"><span class="c3"># clone and install</span>
+git clone <span class="c2">https://github.com/oggynjack/0hive.git</span>
+cd 0hive
+pip install -r requirements.txt
+cp config.example.json config.json
+
+<span class="c3"># add a cookie file for one account, then:</span>
+python gemini_web2api.py</pre>
+        <pre class="code reveal-up"><span class="c3"># call it like any OpenAI-compatible API</span>
+curl http://localhost:8081/v1/chat/completions \
+  -H <span class="c2">"Content-Type: application/json"</span> \
+  -d <span class="c1">'{
+    "model": "gemini-auto",
+    "messages": [{"role":"user","content":"hi"}]
+  }'</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="wrap">
+      <div class="kicker" style="text-align:center">Get started</div>
+      <h2 class="reveal-word"><span class="word"><span>Clone</span></span> <span class="word"><span>it.</span></span> <span class="word"><span>Run</span></span> <span class="word"><span>it.</span></span> <span class="word"><span class="amber">Never</span></span> <span class="word"><span class="amber">think</span></span> <span class="word"><span class="amber">about</span></span> <span class="word"><span class="amber">login</span></span> <span class="word"><span class="amber">again.</span></span></h2>
+      <div class="hero-ctas">
+        <a href="https://github.com/oggynjack/0hive" class="btn btn-primary">View on GitHub</a>
+        <a href="https://github.com/oggynjack/0hive#readme" class="btn">Read the full README</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <div class="brand" style="font-size:1rem;margin-bottom:8px">🐝 0Hive</div>
+      <p>Built on <a href="https://github.com/Sophomoresty/gemini-web2api">gemini-web2api</a> by Sophomoresty. MIT licensed.</p>
+    </div>
+    <div style="display:flex;gap:28px">
+      <a href="https://github.com/oggynjack/0hive">GitHub</a>
+      <a href="https://github.com/oggynjack/0hive/blob/master/docs/ACCOUNT_SYNC.md">Docs</a>
+      <a href="https://github.com/oggynjack/0hive/blob/master/LICENSE">License</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lenis/1.1.13/lenis.min.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from "three";
+window.THREE = THREE;
+window.dispatchEvent(new Event("three-ready"));
+</script>
+<script>
+(function(){
+  "use strict";
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduced) document.documentElement.classList.add("reduced-motion");
+
+  /* ---------- Smooth scroll (Lenis) + GSAP ScrollTrigger, reduced-motion aware ---------- */
+  var lenis = null;
+  if (!reduced && window.Lenis) {
+    lenis = new Lenis({ duration: 1.1, smoothWheel: true });
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add(function(time){ lenis.raf(time * 1000); });
+    gsap.ticker.lagSmoothing(0);
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* nav shadow on scroll */
+  var nav = document.getElementById("nav");
+  ScrollTrigger.create({ start: 20, onUpdate: function(self){ nav.classList.toggle("scrolled", self.scroll() > 20); } });
+
+  /* mobile nav menu */
+  var navToggle = document.getElementById("navToggle");
+  var navLinks = document.getElementById("navLinks");
+  function closeMenu(){ navLinks.classList.remove("open"); navToggle.setAttribute("aria-expanded", "false"); }
+  navToggle.addEventListener("click", function(){
+    var open = navLinks.classList.toggle("open");
+    navToggle.setAttribute("aria-expanded", String(open));
+  });
+  navLinks.querySelectorAll("a").forEach(function(a){ a.addEventListener("click", closeMenu); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeMenu(); });
+
+  /* word-by-word reveal helper (keeps an unsplit accessible name, hides the split copy from AT) */
+  function wireReveal(root){
+    root.querySelectorAll(".word").forEach(function(w){ w.setAttribute("aria-hidden", "true"); });
+  }
+  document.querySelectorAll("h1.hero-title, .reveal-word").forEach(function(el){
+    var clone = el.cloneNode(true);
+    clone.className += " sr-only";
+    clone.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap";
+    clone.setAttribute("aria-hidden", "false");
+    el.setAttribute("aria-hidden", "true");
+    el.parentNode.insertBefore(clone, el.nextSibling);
+    wireReveal(el);
+  });
+
+  if (reduced) {
+    gsap.set(".eyebrow,.hero-sub,.hero-ctas,.hero-meta,.scroll-cue,.reveal-up,h1.hero-title .word span,.reveal-word .word span", { opacity: 1, y: 0 });
+  } else {
+    /* Hero intro timeline */
+    var tl = gsap.timeline({ delay: .15 });
+    tl.to(".eyebrow", { opacity: 1, duration: .5 })
+      .to("h1.hero-title .word span", { y: 0, duration: .9, stagger: .05, ease: "power4.out" }, "-=.2")
+      .to(".hero-sub", { opacity: 1, duration: .6 }, "-=.5")
+      .to(".hero-ctas", { opacity: 1, duration: .6 }, "-=.4")
+      .to(".hero-meta", { opacity: 1, duration: .6 }, "-=.3")
+      .to(".scroll-cue", { opacity: 1, duration: .6 }, "-=.3");
+
+    /* Section heading word reveals on scroll */
+    document.querySelectorAll(".reveal-word").forEach(function(h){
+      gsap.to(h.querySelectorAll(".word span"), {
+        y: 0, duration: .8, stagger: .035, ease: "power3.out",
+        scrollTrigger: { trigger: h, start: "top 85%" }
+      });
+    });
+    /* Generic fade-up blocks */
+    gsap.utils.toArray(".reveal-up").forEach(function(el, i){
+      gsap.to(el, {
+        opacity: 1, y: 0, duration: .8, delay: (i % 3) * .08, ease: "power3.out",
+        scrollTrigger: { trigger: el, start: "top 88%" }
+      });
+    });
+  }
+
+  /* ---------- Hero network scene (Three.js, loaded as an ES module -- see initHeroScene call at bottom) ---------- */
+  var canvas = document.getElementById("heroCanvas");
+  var webglOK = (function(){ try { var c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl") || c.getContext("experimental-webgl"))); } catch(e){ return false; } })();
+  if (!webglOK || reduced) { document.documentElement.classList.add("no-webgl"); }
+
+  function initHeroScene(THREE){
+    if (!webglOK || reduced) return;
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 9);
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(innerWidth, innerHeight);
+
+    var NODE_COUNT = 46;
+    var nodes = [];
+    var nodeGeo = new THREE.SphereGeometry(0.045, 10, 10);
+    var matIdle = new THREE.MeshBasicMaterial({ color: 0x3a4454, transparent: true, opacity: .55 });
+    var matActive = new THREE.MeshBasicMaterial({ color: 0xffb454 });
+    var group = new THREE.Group();
+    scene.add(group);
+
+    for (var i = 0; i < NODE_COUNT; i++) {
+      var r = 3.2 + Math.random() * 2.4;
+      var theta = Math.random() * Math.PI * 2;
+      var phi = Math.acos((Math.random() * 2) - 1);
+      var pos = new THREE.Vector3(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.sin(phi) * Math.sin(theta) * 0.6,
+        r * Math.cos(phi) * 0.6
+      );
+      var mesh = new THREE.Mesh(nodeGeo, matIdle.clone());
+      mesh.position.copy(pos);
+      group.add(mesh);
+      nodes.push({ mesh: mesh, base: pos.clone(), phase: Math.random() * Math.PI * 2 });
+    }
+
+    /* connecting lines between nearby nodes */
+    var linePositions = [];
+    for (var a = 0; a < nodes.length; a++) {
+      for (var b = a + 1; b < nodes.length; b++) {
+        if (nodes[a].base.distanceTo(nodes[b].base) < 2.1 && Math.random() < 0.5) {
+          linePositions.push(nodes[a].base.x, nodes[a].base.y, nodes[a].base.z, nodes[b].base.x, nodes[b].base.y, nodes[b].base.z);
+        }
+      }
+    }
+    var lineGeo = new THREE.BufferGeometry();
+    lineGeo.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+    var lineMat = new THREE.LineBasicMaterial({ color: 0x2a3140, transparent: true, opacity: .35 });
+    var lines = new THREE.LineSegments(lineGeo, lineMat);
+    group.add(lines);
+
+    /* the "active relay" path -- a brighter traveling pulse, visualizing failover */
+    var activeIdx = 0;
+    var clock = new THREE.Clock();
+    var visible = true;
+    document.addEventListener("visibilitychange", function(){ visible = !document.hidden; });
+
+    var pointer = { x: 0, y: 0 };
+    window.addEventListener("pointermove", function(e){
+      pointer.x = (e.clientX / innerWidth - .5);
+      pointer.y = (e.clientY / innerHeight - .5);
+    }, { passive: true });
+    window.addEventListener("blur", function(){ pointer.x = 0; pointer.y = 0; });
+
+    var switchEvery = 1.6, tSince = 0;
+
+    function animate(){
+      requestAnimationFrame(animate);
+      if (!visible) return;
+      var dt = clock.getDelta();
+      tSince += dt;
+      group.rotation.y += dt * 0.045 + pointer.x * 0.002;
+      group.rotation.x += (pointer.y * 0.25 - group.rotation.x) * 0.02;
+
+      if (tSince > switchEvery) {
+        tSince = 0;
+        nodes[activeIdx].mesh.material.color.set(0x3a4454);
+        nodes[activeIdx].mesh.material.opacity = .55;
+        nodes[activeIdx].mesh.scale.setScalar(1);
+        activeIdx = Math.floor(Math.random() * nodes.length);
+      }
+      var act = nodes[activeIdx];
+      act.mesh.material.color.set(0xffb454);
+      act.mesh.material.opacity = 1;
+      var pulse = 1 + Math.sin(performance.now() * 0.006) * 0.35;
+      act.mesh.scale.setScalar(pulse * 1.8);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener("resize", function(){
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  }
+
+  /* Three.js loads as an ES module (modern builds dropped the global/UMD bundle), so it may not
+     be ready yet when this classic script runs -- wait for it, with a timed fallback to the
+     static poster if the module never arrives (e.g. offline, CDN blocked). */
+  if (window.THREE) {
+    initHeroScene(window.THREE);
+  } else {
+    var gotThree = false;
+    window.addEventListener("three-ready", function(){ gotThree = true; initHeroScene(window.THREE); }, { once: true });
+    setTimeout(function(){ if (!gotThree) document.documentElement.classList.add("no-webgl"); }, 3000);
+  }
+})();
+</script>
+</body>
+</html>

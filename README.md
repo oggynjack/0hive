@@ -4,6 +4,8 @@
 toolkit that keeps every account's login fresh automatically, and a live dashboard + chat
 tester to run and watch it all.
 
+**[→ Landing page](https://oggynjack.github.io/0hive/)**
+
 Built on top of [gemini-web2api](https://github.com/Sophomoresty/gemini-web2api) by
 **Sophomoresty** (MIT licensed) — credit where it's due. 0Hive adds:
 
