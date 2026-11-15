@@ -1,4 +1,4 @@
-# 🐝 0Hive
+# 0Hive
 
 **A self-healing, multi-account OpenAI-compatible gateway for Gemini's web app** — with a sync
 toolkit that keeps every account's login fresh automatically, and a live dashboard + chat
@@ -27,7 +27,7 @@ Built on top of [gemini-web2api](https://github.com/Sophomoresty/gemini-web2api)
 - **A proper landing page** at `/` (`web/index.html`) with its own look and motion, separate from
   the functional dashboard/chat tools.
 
-> ⚠️ **This is an unofficial integration.** It works by reusing a real Gemini web session, which
+> **Note: this is an unofficial integration.** It works by reusing a real Gemini web session, which
 > Google does not officially support for this purpose. Behavior, model names, and availability
 > can change without notice, and an account could in principle be rate-limited or restricted for
 > unusual traffic. Use accounts you're comfortable taking that risk with — never anything else's

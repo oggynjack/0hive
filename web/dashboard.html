@@ -193,11 +193,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   <!-- Header -->
   <div class="header">
     <div class="header-left">
-      <a href="https://hive.0code.site/" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;"><h1>🐝 0Hive</h1></a>
+      <a href="https://hive.0code.site/" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 32 32" fill="none" width="22" height="22"><circle cx="16" cy="16" r="14" stroke="#ffb454" stroke-width="2"/><circle cx="16" cy="6" r="3" fill="#ffb454"/><circle cx="25" cy="21" r="3" fill="#5fd4ff"/><circle cx="7" cy="21" r="3" fill="#5fd4ff"/><path d="M16 6 25 21 7 21Z" stroke="#ffb454" stroke-width="1.2" stroke-linejoin="round"/></svg><h1>0Hive</h1></a>
       <span class="badge" id="versionBadge">v1.1.0</span>
     </div>
     <div class="header-meta">
-      <a href="chat.html" class="btn btn-primary" style="text-decoration:none;">💬 Test Chat</a>
+      <a href="chat.html" class="btn btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Test Chat</a>
       <span><span class="status-dot green" id="serverDot"></span><span id="serverStatus">Connecting...</span></span>
       <span id="uptimeDisplay">Uptime: --</span>
     </div>
@@ -606,10 +606,10 @@ async function fetchAccounts() {
         <span style="font-size:.72rem;color:var(--text-muted)">P${a.priority||100}</span>
       </div>
       <div class="account-stats">
-        <span>📊 ${a.total_requests} reqs</span>
-        <span>⏱️ ${(a.avg_latency_ms||0).toFixed(0)}ms avg</span>
-        <span>❌ ${a.total_errors} errors</span>
-        <span>🔄 ${a.consecutive_errors} consecutive</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:3px"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>${a.total_requests} reqs</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>${(a.avg_latency_ms||0).toFixed(0)}ms avg</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>${a.total_errors} errors</span>
+        <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></svg>${a.consecutive_errors} consecutive</span>
         <span>${cookieInfo}</span>
       </div>
       ${a.usage_limit > 0 ? `<div class="usage-bar"><div class="usage-bar-fill" style="width:${usagePct}%;background:${barColor}"></div></div>
